@@ -30,72 +30,7 @@ Composant natif pour Home Assistant permettant de surveiller vos comptes d'élec
 
 ## Développement
 
-Consultez [CONTRIBUTING.md](CONTRIBUTING.md) pour la configuration du développement et les directives.
-
-### Démarrage rapide avec Dev Container
-
-1. Installez [VS Code](https://code.visualstudio.com/) et [Docker](https://www.docker.com/)
-2. Installez l'extension [Dev Containers](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers)
-3. Ouvrez ce dépôt dans VS Code
-4. Appuyez sur `F1` → "Dev Containers: Reopen in Container"
-5. Attendez la fin de la configuration (2-3 minutes la première fois)
-6. Exécutez `just start` pour lancer Home Assistant
-
-Le conteneur de développement inclut tous les outils requis : Python 3.13, uv, ruff, mypy, pytest, docker-in-docker et le shell fish.
-
-### Tests
-
-Le projet inclut une suite de tests complète couvrant les tests unitaires et d'intégration.
-
-#### Exécution rapide des tests
-
-```bash
-# Exécuter tous les tests
-uv run pytest
-
-# Exécuter avec couverture
-just test-cov
-
-# Exécuter la suite de tests complète (lint + format + vérification de types + tests)
-just ci
-```
-
-#### Commandes de test courantes
-
-```bash
-# Tests unitaires uniquement
-uv run pytest tests/unit/
-
-# Tests d'intégration uniquement
-uv run pytest tests/integration/
-
-# Fichier de test spécifique
-uv run pytest tests/unit/test_coordinator.py
-
-# Sortie détaillée
-uv run pytest -v
-
-# Afficher les instructions print
-uv run pytest -s
-```
-
-#### Qualité du code
-
-```bash
-# Linting
-uv run ruff check custom_components/
-
-# Correction automatique des problèmes de linting
-uv run ruff check --fix custom_components/
-
-# Formatage du code
-uv run ruff format custom_components/
-
-# Vérification des types (mode strict)
-uv run mypy custom_components/hydroqc/
-```
-
-Consultez [tests/README.md](tests/README.md) pour la documentation détaillée des tests.
+Consultez [CONTRIBUTING.md](CONTRIBUTING.md) pour la configuration du développement, les directives de contribution, et la documentation complète des tests.
 
 ## Installation
 
