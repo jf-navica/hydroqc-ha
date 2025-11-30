@@ -61,6 +61,17 @@ Assurez-vous que [HACS](https://hacs.xyz/) est installé dans votre instance Hom
 
 #### Installation de l'intégration
 
+**Option A : Installation en un clic**
+
+[![Ouvrir votre instance Home Assistant et ouvrir le dépôt dans HACS.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=hydroqc&repository=hydroqc-ha&category=integration)
+
+Cliquez sur le badge ci-dessus pour ajouter automatiquement ce dépôt à HACS, puis :
+
+1. Cliquez sur **"Télécharger"** (ou **"Installer"**)
+2. **Redémarrez Home Assistant**
+
+**Option B : Installation manuelle via HACS**
+
 1. Ouvrez **HACS** dans Home Assistant
 2. Cliquez sur **Intégrations**
 3. Cliquez sur les **3 points** dans le coin supérieur droit
