@@ -52,12 +52,57 @@ This is a **Home Assistant custom component** for monitoring Hydro-Québec elect
    - Preheat duration: Configurable per integration (0-240 minutes, default 120)
    - **Logging prefix**: All logs use `[OpenData]` prefix for easy troubleshooting
 
+### OpenData API Offer Code Mapping
+
+**CRITICAL**: The OpenData API returns peak event data with specific "offre" codes. The mapping is:
+
+| OpenData "offre" | Portal Rate | Portal Rate Option | Internal Rate Code | Common Names |
+|------------------|-------------|--------------------|--------------------|------------------------------------------|
+| TPC-DPC          | DPC         | None/Empty         | DPC                | Flex-D, DPC                              |
+| CPC-D            | D           | CPC                | DCPC               | Winter Credits, Crédits hivernaux, D+CPC |
+
+**Understanding OpenData API and Peak Generation:**
+
+- **OpenData API ONLY announces CRITICAL peaks** - it does NOT publish the full schedule
+- **The integration must generate the complete peak schedule** and mark which ones are critical based on API data
+
+**For CPC-D (Winter Credits) - DCPC Rate:**
+- **Base Schedule (every day during winter season Dec 1 - Mar 31)**:
+  - Morning Peak: 6:00-10:00 (4 hours) - **changed from 9:00 for winter 2025**
+  - Evening Peak: 16:00-20:00 (4 hours)
+- **Anchor periods** (reference baseline before each peak):
+  - Morning Anchor: 1:00-4:00 (5 hours before peak, 3 hours duration)
+  - Evening Anchor: 12:00-14:00 (4 hours before peak, 2 hours duration)
+- **Critical vs Non-Critical**:
+  - When OpenData API returns a CPC-D event for a specific date/time → that peak is **critical** (`is_critical=True`)
+  - The anchor before a critical peak is also **critical**
+  - All other peaks in the winter schedule (no API announcement) → **non-critical** (`is_critical=False`)
+  - All other anchors (before non-critical peaks) → **non-critical**
+- **API announces critical peaks around noon the day before** - gives enough time to prepare
+- **Schedule generation**: Generate peaks for **today and tomorrow only** (2 days ahead)
+- **Outside winter season**: No schedule generation, binary sensors return `False` (not `Unknown`)
+
+**For TPC-DPC (Flex-D) - DPC Rate:**
+- OpenData API returns TPC-DPC events
+- All announced peaks are critical by definition (`is_critical=True`)
+- No regular schedule to generate - only API-announced events
+- Preheat periods are derived from API events (configurable duration before peak start)
+- Binary sensors check `is_critical` to show alert state
+
+
 ### Rate Plans & Sensors
 
-- **D**: Standard residential → balance, consumption, billing period sensors
+- **D**: Standard residential → balance, consumption, billing period sensors (no peak events)
 - **D+CPC (DCPC)**: D with Winter Credits → adds `wc_*` sensors (cumulated credits, yesterday's peak performance, critical peak alerts)
-- **DT**: Dual tariff → adds higher/lower price consumption, net savings vs Rate D
+  - Fixed schedule: peaks at 6-10 AM and 4-8 PM every winter day
+  - Critical peaks announced via CPC-D offer code from OpenData API
+  - Non-critical peaks are all other scheduled peaks (not announced by API)
+  - Anchors exist for both critical and non-critical peaks
+- **DT**: Bi-energy → adds higher/lower price consumption, net savings vs Rate D (no peak events)
 - **DPC**: Flex-D dynamic pricing → adds `dpc_*` sensors (peak states, pre-heat alerts, critical hours count)
+  - Uses TPC-DPC offer code from OpenData API
+  - All peaks are critical (no regular schedule, only API announcements)
+  - Preheat periods configurable (0-240 minutes before peak)
 - **M/M-GDP**: Commercial rates → standard consumption tracking
 
 **Key Pattern**: Sensor availability is controlled by `rates` list in `const.py`. Winter credit sensors (`wc_*`) only appear for rate `"DCPC"`, FlexD sensors (`dpc_*`) only for rate `"DPC"`.
@@ -109,8 +154,7 @@ just restart  # Restart HA container to reload integration
 ### Key Files to Check First
 - **README.md**: User-facing features, supported rates, installation
 - **CONTRIBUTING.md**: Commit conventions, PR requirements, rate-specific feature guidelines
-- **justfile**: All dev commands (start, stop, restart, logs, qa, test)
-- **custom_components/hydroqc/const.py**: Sensor definitions, rate mappings
+
 - **pyproject.toml**: Python 3.13, uv config, ruff rules (line-length 100, select E/W/F/I/UP/B/C4/SIM/RET/ARG/PTH/PL/RUF)
 - **uv.lock**: Lock file for reproducible builds (commit this file)
 - **justfile**: All dev commands (start, stop, restart, logs, qa, test)
@@ -388,7 +432,12 @@ Two methods for importing consumption history:
 - **Off-season handling**: 
   - OpenData binary sensors return `False` (not `None`/unknown) when no peak data available
   - `current_state` shows "Off Season (Dec 1 - Mar 31)" when no events
-  - Peak events announced 24h in advance, so sensors may show no data until announcement
+  - DCPC schedule generation only runs during winter season (Dec 1 - Mar 31)
+- **is_critical property**: 
+  - **CRITICAL FIX NEEDED**: Current logic using offer prefix (`startswith("TPC")`) is WRONG and must be removed
+  - Correct behavior: All events from OpenData API are critical announcements (regardless of offer code)
+  - Use `force_critical` parameter in PeakEvent to explicitly mark API events as critical
+  - Generated schedule peaks (DCPC only) are non-critical unless matched with API event
 - **Dot notation paths**: Must match actual object attributes from `hydroqc` library (inspect library source if unsure)
   - `get_sensor_value()` safely handles `None` in path traversal, returning `None` if any part is missing
 - **Rate vs rate_option**: Rate is base (D/DT/DPC/M), rate_option is modifier (CPC for winter credits). Combined: `rate_with_option`
