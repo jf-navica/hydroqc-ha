@@ -10,7 +10,7 @@
 
 ---
 
-## [0.3.0-beta.1] - 2025-12-09
+## [0.3.0] - 2025-12-10
 
 ### Modifié
 - Refactorisation complète du code en structure modulaire pour améliorer la maintenabilité
@@ -21,17 +21,17 @@
   - Compatibilité ascendante maintenue via ré-exportations
   - Aucun changement fonctionnel - refactorisation pure du code
 - Mise à jour de la version minimale de Home Assistant à 2025.9.0
-
----
-
-## [0.2.2-beta.1] - 2025-12-09
+- Mise à jour de Hydro-Quebec-API-Wrapper à la version 4.2.6
 
 ### Corrigé
+- Erreur hydroqc.error.HydroQcHTTPError: Bad JSON format Fix: [#31](https://github.com/hydroqc/hydroqc-ha/issues/31)
 - Mise à jour automatique de la criticité des événements calendrier de pointe existants
   - Les événements calendrier sont maintenant mis à jour en place lorsque leur criticité change (critique ↔ non-critique)
   - Évite la suppression et recréation d'événements, préservant les UIDs et l'historique
   - Mise à jour du titre et de la description pour refléter le nouveau statut de criticité
   - Améliore l'expérience utilisateur en maintenant la cohérence des événements calendrier
+- Correction des importations de tests suite à la refactorisation modulaire
+- Amélioration des tests avec freezegun pour des tests déterministes basés sur le temps
 
 ---
 
