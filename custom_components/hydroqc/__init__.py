@@ -193,14 +193,29 @@ async def _async_register_services(hass: HomeAssistant) -> None:
             for config_entry_id in device.config_entries:
                 coordinator: HydroQcDataCoordinator = hass.data[DOMAIN].get(config_entry_id)
                 if coordinator and coordinator.is_portal_mode:
+                    _LOGGER.info(
+                        "Starting consumption history sync for device %s (last %d days)",
+                        device.name or device_id,
+                        days_back,
+                    )
                     try:
-                        # Start CSV import for historical consumption (non-blocking)
-                        coordinator.async_sync_consumption_history(days_back)
-                        _LOGGER.info(
-                            "Started consumption history sync for device %s (last %d days)",
-                            device.name or device_id,
-                            days_back,
-                        )
+                        # Wrap the non-blocking sync in a task to log completion
+                        async def _sync_task_wrapper() -> None:
+                            """Run sync and log completion."""
+                            try:
+                                await coordinator.async_sync_consumption_history(days_back)
+                                _LOGGER.info(
+                                    "Consumption history sync finished for device %s",
+                                    device.name or device_id,
+                                )
+                            except Exception as task_err:
+                                _LOGGER.error(
+                                    "Consumption history sync failed for device %s: %s",
+                                    device.name or device_id,
+                                    task_err,
+                                )
+
+                        hass.async_create_task(_sync_task_wrapper())
                     except Exception as err:
                         _LOGGER.error(
                             "Error starting consumption history sync for device %s: %s",
