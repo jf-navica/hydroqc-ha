@@ -167,5 +167,6 @@ class HydroQcSensor(CoordinatorEntity[HydroQcDataCoordinator], SensorEntity):
     @property
     def available(self) -> bool:
         """Return True if entity is available."""
-        # Sensors are always available to show last known value
-        return True
+        # An entity is available if the coordinator has fetched data for its source
+        value = self.coordinator.get_sensor_value(self._data_source)
+        return value is not None

@@ -196,5 +196,9 @@ class HydroQcBinarySensor(
     @property
     def available(self) -> bool:
         """Return True if entity is available."""
-        # Sensors are always available to show last known value
-        return True
+        # An entity is available if the coordinator has fetched data for its source
+        value = self.coordinator.get_sensor_value(self._data_source)
+        is_available = value is not None
+
+        # In OpenData mode, no peak data means the sensor is "off" but still available
+        return is_available or self._data_source.startswith("public_client.")
