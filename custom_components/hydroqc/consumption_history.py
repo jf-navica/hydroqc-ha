@@ -544,6 +544,8 @@ class ConsumptionHistoryImporter:
             # Import to recorder
             metadata = self._statistics_manager.build_statistics_metadata(consumption_type)
 
+            self._statistics_manager.write_debug_stats(stats_list, metadata)
+
             await get_instance(self.hass).async_add_executor_job(
                 statistics.async_add_external_statistics,
                 self.hass,

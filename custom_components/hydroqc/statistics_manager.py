@@ -3,17 +3,19 @@
 from __future__ import annotations
 
 import asyncio
+import csv
 import datetime
 import logging
 import zoneinfo
 from collections.abc import Callable
+from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 from homeassistant.components.recorder import get_instance, statistics  # type: ignore[attr-defined]
 from homeassistant.components.recorder.models import StatisticMeanType
 from homeassistant.helpers.update_coordinator import UpdateFailed
 
-from .const import TIME_ZONE
+from .const import DEBUG_STATS_FILE_PATH, ENABLE_CSV_DEBUG, TIME_ZONE
 
 if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant
@@ -371,6 +373,43 @@ class StatisticsManager:
         )
         return 0.0
 
+    def write_debug_stats(
+        self, stats_list: list[dict[str, Any]], metadata: dict[str, Any]
+    ) -> None:
+        """Write statistics to debug CSV file."""
+        if not ENABLE_CSV_DEBUG:
+            return
+
+        try:
+            file_path = Path(self.hass.config.config_dir) / DEBUG_STATS_FILE_PATH
+            file_path.parent.mkdir(parents=True, exist_ok=True)
+
+            file_exists = file_path.exists()
+            mode = "a" if file_exists else "w"
+
+            statistic_id = metadata.get("statistic_id", "unknown")
+
+            with file_path.open(mode, newline="", encoding="utf-8") as csvfile:
+                fieldnames = ["statistic_id", "start", "state", "sum"]
+                writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+
+                if not file_exists:
+                    writer.writeheader()
+
+                for stat in stats_list:
+                    row = {
+                        "statistic_id": statistic_id,
+                        "start": stat["start"].isoformat(),
+                        "state": stat["state"],
+                        "sum": stat["sum"],
+                    }
+                    writer.writerow(row)
+
+            _LOGGER.debug("Written %d stats to debug file %s", len(stats_list), file_path)
+
+        except Exception as err:
+            _LOGGER.error("Failed to write debug stats: %s", err)
+
     async def _process_day_consumption(
         self,
         current_date: datetime.date,
@@ -435,6 +474,8 @@ class StatisticsManager:
             # Import statistics using recorder API
             if stats_list:
                 metadata = self.build_statistics_metadata(consumption_type)
+
+                self.write_debug_stats(stats_list, metadata)
 
                 await get_instance(self.hass).async_add_executor_job(
                     statistics.async_add_external_statistics,

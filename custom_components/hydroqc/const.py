@@ -8,6 +8,7 @@ DOMAIN: Final = "hydroqc"
 # Debugging
 ENABLE_CSV_DEBUG: Final = True
 DEBUG_CSV_FILE_PATH: Final = "custom_components/hydroqc/debug_consumption_history.csv"
+DEBUG_STATS_FILE_PATH: Final = "custom_components/hydroqc/debug_statistics.csv"
 
 # Timezone for Hydro-Québec data
 TIME_ZONE: Final = zoneinfo.ZoneInfo("America/Toronto")
