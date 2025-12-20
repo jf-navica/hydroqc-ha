@@ -6,7 +6,7 @@ from typing import Final
 DOMAIN: Final = "hydroqc"
 
 # Debugging
-ENABLE_CSV_DEBUG: Final = True
+ENABLE_CSV_DEBUG: Final = False
 DEBUG_CSV_FILE_PATH: Final = "custom_components/hydroqc/debug_consumption_history.csv"
 DEBUG_STATS_FILE_PATH: Final = "custom_components/hydroqc/debug_statistics.csv"
 
