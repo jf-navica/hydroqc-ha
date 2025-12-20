@@ -52,17 +52,25 @@ class ConsumptionHistoryImporter:
 
     async def _write_debug_csv(self, csv_data: list[Sequence[Any]]) -> None:
         """Write the raw CSV data to a local file for debugging."""
+        _LOGGER.debug("Attempting to write debug CSV. ENABLE_CSV_DEBUG: %s", ENABLE_CSV_DEBUG)
         if not ENABLE_CSV_DEBUG:
             return
 
         file_path: Path = Path(str(self.hass.config.config_dir)) / DEBUG_CSV_FILE_PATH
+        _LOGGER.debug("Debug CSV file path: %s", file_path)
+        _LOGGER.debug("CSV data length: %d", len(csv_data))
+
+        if not csv_data:
+            _LOGGER.info("No CSV data to write to debug file.")
+            return
+
         file_path.parent.mkdir(parents=True, exist_ok=True)
 
         mode = "a" if file_path.exists() else "w"
         try:
             with file_path.open(mode, newline="", encoding="utf-8") as csvfile:
                 writer = csv.writer(csvfile)
-                if mode == "w" and csv_data:  # Write header only if new file
+                if mode == "w":  # Always write header if new file, assuming csv_data is not empty
                     writer.writerow(csv_data[0])
                 writer.writerows(
                     csv_data[1:]
