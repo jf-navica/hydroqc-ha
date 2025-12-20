@@ -553,6 +553,14 @@ class ConsumptionHistoryImporter:
                 stats_list,
             )
 
+            # Update cache in statistics manager to maintain continuity for next iteration
+            if stats_list:
+                last_stat = stats_list[-1]
+                last_date = last_stat["start"].date()
+                self._statistics_manager.set_last_known_sum(
+                    consumption_type, last_date, last_stat["sum"]
+                )
+
             _LOGGER.info(
                 "Imported %d CSV statistics for %s (sum: %.2f kWh)",
                 len(stats_list),

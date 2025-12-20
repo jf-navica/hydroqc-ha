@@ -50,6 +50,7 @@ class StatisticsManager:
         self._rate = rate
         self._get_statistic_id = get_statistic_id_func
         self._contract_name = contract_name
+        self._last_known_sums: dict[str, tuple[datetime.date, float]] = {}
 
     async def determine_sync_start_date(  # noqa: PLR0911, PLR0915
         self,
@@ -324,6 +325,18 @@ class StatisticsManager:
         statistic_id = self._get_statistic_id(consumption_type)
         tz = TIME_ZONE
 
+        # Check in-memory cache first to avoid DB race conditions during sequential imports
+        if consumption_type in self._last_known_sums:
+            last_date, last_sum = self._last_known_sums[consumption_type]
+            if last_date == reference_date:
+                _LOGGER.debug(
+                    "Using cached base sum %.2f kWh for %s on %s",
+                    last_sum,
+                    consumption_type,
+                    reference_date,
+                )
+                return last_sum
+
         # Try to find last stat, looking back up to 30 days
         for i in range(30):
             current_date = reference_date - datetime.timedelta(days=i)
@@ -373,9 +386,13 @@ class StatisticsManager:
         )
         return 0.0
 
-    def write_debug_stats(
-        self, stats_list: list[dict[str, Any]], metadata: dict[str, Any]
+    def set_last_known_sum(
+        self, consumption_type: str, date: datetime.date, sum_value: float
     ) -> None:
+        """Update the last known sum cache."""
+        self._last_known_sums[consumption_type] = (date, sum_value)
+
+    def write_debug_stats(self, stats_list: list[dict[str, Any]], metadata: dict[str, Any]) -> None:
         """Write statistics to debug CSV file."""
         if not ENABLE_CSV_DEBUG:
             return
@@ -483,6 +500,10 @@ class StatisticsManager:
                     metadata,
                     stats_list,
                 )
+
+                # Update cache with the last sum of the day
+                last_stat = stats_list[-1]
+                self.set_last_known_sum(consumption_type, current_date, last_stat["sum"])
 
                 _LOGGER.info(
                     "Imported %d hourly statistics for %s on %s (sum: %.2f kWh)",
