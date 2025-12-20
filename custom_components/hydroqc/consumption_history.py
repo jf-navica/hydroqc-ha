@@ -7,7 +7,6 @@ import contextlib
 import csv
 import datetime
 import logging
-import os
 from collections.abc import Callable, Sequence
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
@@ -65,7 +64,9 @@ class ConsumptionHistoryImporter:
                 writer = csv.writer(csvfile)
                 if mode == "w" and csv_data:  # Write header only if new file
                     writer.writerow(csv_data[0])
-                writer.writerows(csv_data[1:])  # Write data rows, skipping header if already written
+                writer.writerows(
+                    csv_data[1:]
+                )  # Write data rows, skipping header if already written
             _LOGGER.debug("Appended raw CSV data to %s", file_path)
         except OSError as e:
             _LOGGER.error("Failed to write debug CSV to %s: %s", file_path, e)
