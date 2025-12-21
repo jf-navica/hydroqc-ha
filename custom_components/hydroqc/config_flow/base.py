@@ -19,6 +19,7 @@ from homeassistant.helpers.selector import (
     SelectSelector,
     SelectSelectorConfig,
     SelectSelectorMode,
+    TextSelector,
 )
 
 import hydroqc
@@ -285,7 +286,7 @@ class HydroQcConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             step_id="import_history",
             data_schema=vol.Schema(
                 {
-                    vol.Optional(CONF_ENABLE_CONSUMPTION_SYNC, default=True): vol.Boolean(),
+                    vol.Optional(CONF_ENABLE_CONSUMPTION_SYNC, default=True): bool,
                     vol.Optional(CONF_HISTORY_DAYS, default=0): NumberSelector(
                         NumberSelectorConfig(
                             min=0,
@@ -406,7 +407,7 @@ class HydroQcConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             step_id="opendata_rate",
             data_schema=vol.Schema(
                 {
-                    vol.Required(CONF_CONTRACT_NAME, default="Home"): str,
+                    vol.Required(CONF_CONTRACT_NAME, default="Home"): TextSelector(),
                     vol.Required("rate_selection"): SelectSelector(
                         SelectSelectorConfig(
                             options=cast(list[SelectOptionDict], rate_options),
