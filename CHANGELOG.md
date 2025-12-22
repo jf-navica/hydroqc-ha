@@ -47,6 +47,12 @@ L'option "Intervalle de mise à jour" a été retirée de la configuration. Le s
   - Messages d'erreur contextuels pour problème connu du portail HQ
   - Aide les utilisateurs à comprendre les échecs temporaires de synchronisation
 
+- **Amélioration des erreurs de configuration**
+  - Vérification du statut du portail avant la connexion
+  - Messages d'erreur spécifiques pour maintenance du portail (Erreur 500)
+  - Messages d'erreur spécifiques pour portail indisponible
+  - Meilleure expérience utilisateur lors des périodes de maintenance HQ
+
 ### Modifié
 
 - Intervalle fixe du coordinateur : 5 minutes (au lieu de configurable)
