@@ -12,7 +12,7 @@ from zoneinfo import ZoneInfo
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_PASSWORD, CONF_USERNAME
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers.event import async_call_later, async_track_point_in_time
+from homeassistant.helpers.event import async_call_later, async_track_point_in_time, async_track_time_change
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 from homeassistant.util import slugify
 
@@ -127,6 +127,15 @@ class HydroQcDataCoordinator(
         # Initialize mixin attributes (after super().__init__ so self.hass is available)
         self._init_consumption_sync()
         self._init_calendar_sync()
+        
+        # Set up hourly time trigger for peak event updates
+        # Triggers at XX:00:00 sharp every hour during winter season
+        async_track_time_change(
+            hass,
+            self._async_hourly_peak_update,
+            minute=0,
+            second=0,
+        )
 
     @property
     def is_portal_mode(self) -> bool:
@@ -170,6 +179,19 @@ class HydroQcDataCoordinator(
         # For opendata mode, generate stable ID from contract name
         contract_name = self.contract_name
         return f"opendata_{slugify(contract_name)}"
+
+    async def _async_hourly_peak_update(self, now: datetime.datetime) -> None:
+        """Force coordinator refresh at top of each hour for peak accuracy.
+        
+        Called by async_track_time_change at XX:00:00 exactly.
+        Only runs during winter season for peak event sensors.
+        """
+        if not self._is_winter_season():
+            return
+        
+        _LOGGER.debug("[OpenData] Hourly trigger at %s:00:00 - forcing peak data update", now.hour)
+        await self.async_request_refresh()
+    
     def _is_winter_season(self) -> bool:
         """Check if currently in winter season (Dec 1 - Mar 31)."""
         now = datetime.datetime.now(ZoneInfo("America/Toronto"))
@@ -188,10 +210,7 @@ class HydroQcDataCoordinator(
         return 0 <= now.hour < 8
 
     def _should_update_opendata(self) -> bool:
-        """Determine if OpenData should be updated based on time elapsed and window.
-        
-        Always updates at the top of each hour to ensure peak state sensors are accurate.
-        """
+        """Determine if OpenData should be updated based on time elapsed and window."""
         # Skip if off-season
         if not self._is_winter_season():
             return False
@@ -204,14 +223,8 @@ class HydroQcDataCoordinator(
         now = datetime.datetime.now(ZoneInfo("America/Toronto"))
         elapsed = (now - self._last_opendata_update).total_seconds()
         
-        # Force update at top of each hour for accurate peak state transitions
-        # Peak events start/end on the hour (e.g., 6:00, 10:00, 16:00, 20:00)
-        # Check if we're within first 5 minutes of a new hour and haven't updated this hour yet
-        if now.minute < 5 and self._last_opendata_update.hour != now.hour:
-            _LOGGER.debug("[OpenData] Forcing update at top of hour for peak state accuracy")
-            return True
-        
         # Active window: 5 minutes, Inactive: 60 minutes
+        # Note: Hourly updates are handled by async_track_time_change trigger
         if self._is_opendata_active_window():
             return elapsed >= 300  # 5 minutes
         return elapsed >= 3600  # 60 minutes
