@@ -10,7 +10,7 @@ from typing import Any, cast
 from homeassistant.components.sensor import SensorEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers.entity import DeviceInfo  # type: ignore[attr-defined]
+from homeassistant.helpers.entity import DeviceInfo, EntityCategory
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from homeassistant.loader import async_get_integration
@@ -97,6 +97,10 @@ class HydroQcSensor(CoordinatorEntity[HydroQcDataCoordinator], SensorEntity):
         self._attr_state_class = sensor_config.get("state_class")
         self._attr_native_unit_of_measurement = sensor_config.get("unit")
         self._attr_icon = sensor_config.get("icon")
+        
+        # Set entity category for diagnostic sensors
+        if sensor_config.get("diagnostic", False):
+            self._attr_entity_category = EntityCategory.DIAGNOSTIC
         
         # Set attribution based on data source
         if isinstance(self._data_source, str) and self._data_source.startswith("public_client."):
