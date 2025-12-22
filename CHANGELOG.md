@@ -42,6 +42,11 @@ L'option "Intervalle de mise à jour" a été retirée de la configuration. Le s
   - Délai aléatoire 0-60s au démarrage
   - Évite les pics d'appels simultanés lors des redémarrages HA
 
+- **Détection des changements de période de facturation**
+  - Identifie automatiquement les périodes à risque (2-3 jours avant/après fin de période)
+  - Messages d'erreur contextuels pour problème connu du portail HQ
+  - Aide les utilisateurs à comprendre les échecs temporaires de synchronisation
+
 ### Modifié
 
 - Intervalle fixe du coordinateur : 5 minutes (au lieu de configurable)
