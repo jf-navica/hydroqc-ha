@@ -12,6 +12,8 @@
 
 ## [0.6.0] - 2025-01-XX
 
+[![GitHub Release Downloads](https://img.shields.io/github/downloads/hydroqc/hydroqc-ha/v0.6.0/total?style=flat-square&logo=github&label=Téléchargements)](https://github.com/hydroqc/hydroqc-ha/releases/tag/v0.6.0)
+
 ### ⚠️ Changements importants
 
 **Suppression de l'option d'intervalle de mise à jour configurable**
@@ -79,6 +81,7 @@ L'option "Intervalle de mise à jour" a été retirée de la configuration. Le s
 ---
 
 ## [0.5.0] - 2025-12-22
+
 
 ### Note de mise à jour importante
 
