@@ -255,7 +255,7 @@ class HydroQcDataCoordinator(
 
         # Calendar sync: Only run if peak event count changed
         if self._calendar_entity_id and self.public_client.peak_handler:
-            current_peak_count = len(self.public_client.peak_handler.events)
+            current_peak_count = len(self.public_client.peak_handler._events)
             if current_peak_count != self._last_peak_events_count:
                 if self._calendar_sync_task is None or self._calendar_sync_task.done():
                     self._calendar_sync_task = asyncio.create_task(self._async_sync_calendar_events())
