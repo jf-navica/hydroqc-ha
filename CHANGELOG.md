@@ -71,6 +71,7 @@ L'option "Intervalle de mise à jour" a été retirée de la configuration. Le s
 - **Organisation des capteurs diagnostiques**
   - Déplacement de 15 capteurs non-essentiels vers la catégorie diagnostique
   - Déplacement de 15 capteurs binaires liés aux pointes vers la catégorie diagnostique
+  - 14 capteurs désactivés par défaut (peuvent être activés manuellement)
   - Désencombre la liste principale des entités
   - Capteurs toujours accessibles dans la section diagnostique
   - Capteurs diagnostiques:
@@ -81,6 +82,14 @@ L'option "Intervalle de mise à jour" a été retirée de la configuration. Le s
   - Capteurs binaires diagnostiques (pointes):
     - Winter Credits: pré-chauffage, pointe critique en cours, alertes anchor/peak, pointes matin/soir
     - Flex-D: pré-chauffage, pointe en cours, pointes critiques matin/soir
+  - Capteurs désactivés par défaut:
+    - Tarif et option de tarif (informations techniques)
+    - Statut du portail (diagnostic de connexion)
+    - EPP activé (option de facturation)
+    - Jours d'hiver (compteur DPC)
+    - Heures de début pré-chauffage (WC et DPC)
+    - Pointes pré-chauffage (WC et DPC)
+    - Pointes critiques aujourd'hui/demain matin/soir (WC et DPC)
 
 ### Modifié
 

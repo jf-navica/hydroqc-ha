@@ -151,6 +151,7 @@ SENSORS: Final = {
         "unit": None,
         "rates": ["ALL"],
         "diagnostic": True,
+        "disabled_by_default": True,
     },
     "current_billing_period_rate_option": {
         "data_source": "contract.rate_option",
@@ -160,6 +161,7 @@ SENSORS: Final = {
         "unit": None,
         "rates": ["ALL"],
         "diagnostic": True,
+        "disabled_by_default": True,
     },
     # Outage sensor with attributes
     "outage": {
@@ -223,7 +225,7 @@ SENSORS: Final = {
         "data_source": "public_client.peak_handler.next_peak.preheat.start_date",
         "device_class": "timestamp",
         "icon": "mdi:clock-start",
-        "rates": ["DPC"],        "diagnostic": True,    },
+        "rates": ["DPC"],        "diagnostic": True,        "disabled_by_default": True,    },
     "dpc_critical_hours_count": {
         "data_source": "contract.critical_called_hours",
         "icon": "mdi:clock-alert-outline",
@@ -241,6 +243,7 @@ SENSORS: Final = {
             "max": "contract.winter_total_days",
         },
         "diagnostic": True,
+        "disabled_by_default": True,
     },
     # Winter Credits (DCPC) sensors
     "wc_state": {
@@ -392,6 +395,7 @@ BINARY_SENSORS: Final = {
         "icon": "mdi:web-check",
         "rates": ["ALL"],
         "diagnostic": True,
+        "disabled_by_default": True,
     },
     # Contract binary sensors
     "current_period_epp_enabled": {
@@ -399,6 +403,7 @@ BINARY_SENSORS: Final = {
         "icon": "mdi:code-equal",
         "rates": ["ALL"],
         "diagnostic": True,
+        "disabled_by_default": True,
     },
     # Winter Credits binary sensors
     "wc_critical": {
@@ -418,6 +423,7 @@ BINARY_SENSORS: Final = {
         "icon": "mdi:flash-alert",
         "rates": ["DCPC"],
         "diagnostic": True,
+        "disabled_by_default": True,
     },
     "wc_next_anchor_critical": {
         "data_source": "public_client.peak_handler.next_anchor.is_critical",
@@ -442,24 +448,28 @@ BINARY_SENSORS: Final = {
         "icon": "mdi:message-flash",
         "rates": ["DCPC"],
         "diagnostic": True,
+        "disabled_by_default": True,
     },
     "wc_critical_evening_peak_today": {
         "data_source": "public_client.peak_handler.today_evening_peak.is_critical",
         "icon": "mdi:message-flash",
         "rates": ["DCPC"],
         "diagnostic": True,
+        "disabled_by_default": True,
     },
     "wc_critical_morning_peak_tomorrow": {
         "data_source": "public_client.peak_handler.tomorrow_morning_peak.is_critical",
         "icon": "mdi:message-flash",
         "rates": ["DCPC"],
         "diagnostic": True,
+        "disabled_by_default": True,
     },
     "wc_critical_evening_peak_tomorrow": {
         "data_source": "public_client.peak_handler.tomorrow_evening_peak.is_critical",
         "icon": "mdi:message-flash",
         "rates": ["DCPC"],
         "diagnostic": True,
+        "disabled_by_default": True,
     },
     # DPC binary sensors
     "dpc_pre_heat": {
@@ -467,6 +477,7 @@ BINARY_SENSORS: Final = {
         "icon": "mdi:flash-alert",
         "rates": ["DPC"],
         "diagnostic": True,
+        "disabled_by_default": True,
     },
     "dpc_peak_in_progress": {
         "data_source": "public_client.peak_handler.peak_in_progress",
@@ -479,23 +490,27 @@ BINARY_SENSORS: Final = {
         "icon": "mdi:message-flash",
         "rates": ["DPC"],
         "diagnostic": True,
+        "disabled_by_default": True,
     },
     "dpc_critical_evening_peak_today": {
         "data_source": "public_client.peak_handler.today_evening_peak.is_critical",
         "icon": "mdi:message-flash",
         "rates": ["DPC"],
         "diagnostic": True,
+        "disabled_by_default": True,
     },
     "dpc_critical_morning_peak_tomorrow": {
         "data_source": "public_client.peak_handler.tomorrow_morning_peak.is_critical",
         "icon": "mdi:message-flash",
         "rates": ["DPC"],
         "diagnostic": True,
+        "disabled_by_default": True,
     },
     "dpc_critical_evening_peak_tomorrow": {
         "data_source": "public_client.peak_handler.tomorrow_evening_peak.is_critical",
         "icon": "mdi:message-flash",
         "rates": ["DPC"],
         "diagnostic": True,
+        "disabled_by_default": True,
     },
 }
