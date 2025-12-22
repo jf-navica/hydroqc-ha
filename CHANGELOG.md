@@ -68,10 +68,14 @@ L'option "Intervalle de mise à jour" a été retirée de la configuration. Le s
   - Affichage de l'attribution dans les détails des entités
 
 - **Organisation des capteurs diagnostiques**
-  - Déplacement de 10 capteurs non-essentiels vers la catégorie diagnostique
+  - Déplacement de 15 capteurs non-essentiels vers la catégorie diagnostique
   - Désencombre la liste principale des entités
   - Capteurs toujours accessibles dans la section diagnostique
-  - Inclut: durée de période, jour actuel, EPP, température moyenne, coût moyen, etc.
+  - Capteurs diagnostiques:
+    - Période facturation: durée, jour actuel, moyenne consommation, tarif
+    - Informations techniques: température moyenne, coût moyen, option EPP
+    - Winter Credits (DCPC): état WC, début pré-chauffage
+    - Flex-D (DPC): heures critiques, jours hiver, début pré-chauffage
 
 ### Modifié
 

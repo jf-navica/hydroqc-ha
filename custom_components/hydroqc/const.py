@@ -108,6 +108,7 @@ SENSORS: Final = {
         "icon": "mdi:home-lightning-bolt",
         "unit": "kWh",
         "rates": ["ALL"],
+        "diagnostic": True,
     },
     "current_billing_period_total_consumption": {
         "data_source": "contract.cp_total_consumption",
@@ -149,6 +150,7 @@ SENSORS: Final = {
         "icon": "mdi:playlist-check",
         "unit": None,
         "rates": ["ALL"],
+        "diagnostic": True,
     },
     "current_billing_period_rate_option": {
         "data_source": "contract.rate_option",
@@ -229,6 +231,7 @@ SENSORS: Final = {
         "attributes": {
             "max": "contract.max_critical_called_hours",
         },
+        "diagnostic": True,
     },
     "dpc_winter_days_count": {
         "data_source": "contract.winter_total_days_last_update",
@@ -237,6 +240,7 @@ SENSORS: Final = {
         "attributes": {
             "max": "contract.winter_total_days",
         },
+        "diagnostic": True,
     },
     # Winter Credits (DCPC) sensors
     "wc_state": {
