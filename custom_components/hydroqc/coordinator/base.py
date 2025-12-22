@@ -5,12 +5,14 @@ from __future__ import annotations
 import asyncio
 import datetime
 import logging
+import random
 from typing import Any
+from zoneinfo import ZoneInfo
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_PASSWORD, CONF_USERNAME
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers.event import async_track_point_in_time
+from homeassistant.helpers.event import async_call_later, async_track_point_in_time
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 from homeassistant.util import slugify
 
@@ -37,8 +39,6 @@ from ..const import (
     CONF_PREHEAT_DURATION,
     CONF_RATE,
     CONF_RATE_OPTION,
-    CONF_UPDATE_INTERVAL,
-    DEFAULT_UPDATE_INTERVAL,
     DOMAIN,
 )
 from ..public_data_client import PublicDataClient
@@ -87,6 +87,17 @@ class HydroQcDataCoordinator(
         # Track last peak update hour to ensure hourly updates
         self._last_peak_update_hour: int | None = None
 
+        # Smart scheduling: track last update times for OpenData and Portal
+        self._last_opendata_update: datetime.datetime | None = None
+        self._last_portal_update: datetime.datetime | None = None
+        self._last_consumption_sync: datetime.datetime | None = None
+        
+        # Track peak event count for calendar sync optimization
+        self._last_peak_events_count: int = 0
+        
+        # Track portal offline status to avoid log spam
+        self._portal_last_offline_log: datetime.datetime | None = None
+
         # Initialize webuser if in portal mode
         if self._auth_mode == AUTH_MODE_PORTAL:
             self._webuser = WebUser(
@@ -100,14 +111,13 @@ class HydroQcDataCoordinator(
             self._account_id = entry.data[CONF_ACCOUNT_ID]
             self._contract_id = entry.data[CONF_CONTRACT_ID]
 
-        # Get update interval from options or use default
-        update_interval_seconds = entry.options.get(CONF_UPDATE_INTERVAL, DEFAULT_UPDATE_INTERVAL)
-
+        # Use fixed 5-minute base interval for coordinator
+        # (Smart scheduling logic in _async_update_data handles actual update frequency)
         super().__init__(
             hass,
             _LOGGER,
             name=DOMAIN,
-            update_interval=datetime.timedelta(seconds=update_interval_seconds),
+            update_interval=datetime.timedelta(seconds=300),  # 5 minutes
             config_entry=entry,
         )
 
@@ -157,7 +167,56 @@ class HydroQcDataCoordinator(
         # For opendata mode, generate stable ID from contract name
         contract_name = self.contract_name
         return f"opendata_{slugify(contract_name)}"
+    def _is_winter_season(self) -> bool:
+        """Check if currently in winter season (Dec 1 - Mar 31)."""
+        now = datetime.datetime.now(ZoneInfo("America/Toronto"))
+        month = now.month
+        # Winter season: December (12), January (1), February (2), March (3)
+        return month in (12, 1, 2, 3)
 
+    def _is_opendata_active_window(self) -> bool:
+        """Check if currently in OpenData active hours (11:00-18:00 EST)."""
+        now = datetime.datetime.now(ZoneInfo("America/Toronto"))
+        return 11 <= now.hour < 18
+
+    def _is_portal_active_window(self) -> bool:
+        """Check if currently in Portal active hours (00:00-08:00 EST)."""
+        now = datetime.datetime.now(ZoneInfo("America/Toronto"))
+        return 0 <= now.hour < 8
+
+    def _should_update_opendata(self) -> bool:
+        """Determine if OpenData should be updated based on time elapsed and window."""
+        # Skip if off-season
+        if not self._is_winter_season():
+            return False
+        
+        # First update always runs
+        if self._last_opendata_update is None:
+            return True
+        
+        # Calculate time elapsed
+        now = datetime.datetime.now(ZoneInfo("America/Toronto"))
+        elapsed = (now - self._last_opendata_update).total_seconds()
+        
+        # Active window: 5 minutes, Inactive: 60 minutes
+        if self._is_opendata_active_window():
+            return elapsed >= 300  # 5 minutes
+        return elapsed >= 3600  # 60 minutes
+
+    def _should_update_portal(self) -> bool:
+        """Determine if Portal should be updated based on time elapsed and window."""
+        # First update always runs
+        if self._last_portal_update is None:
+            return True
+        
+        # Calculate time elapsed
+        now = datetime.datetime.now(ZoneInfo("America/Toronto"))
+        elapsed = (now - self._last_portal_update).total_seconds()
+        
+        # Active window: 60 minutes, Inactive: 180 minutes
+        if self._is_portal_active_window():
+            return elapsed >= 3600  # 60 minutes
+        return elapsed >= 10800  # 180 minutes
     async def _async_update_data(self) -> dict[str, Any]:  # noqa: PLR0912, PLR0915
         """Fetch data from Hydro-Québec API."""
         data: dict[str, Any] = {
@@ -171,101 +230,126 @@ class HydroQcDataCoordinator(
         current_hour = datetime.datetime.now().hour
         should_update_peaks = self._last_peak_update_hour != current_hour
 
-        # Always fetch public peak data (especially on the hour for accurate state)
-        if should_update_peaks:
+        # OpenData: Fetch public peak data with smart scheduling
+        if self._should_update_opendata():
             try:
                 await self.public_client.fetch_peak_data()
-                self._last_peak_update_hour = current_hour
-                _LOGGER.info("[OpenData] Hourly peak data refresh at %02d:00", current_hour)
+                self._last_opendata_update = datetime.datetime.now(ZoneInfo("America/Toronto"))
+                
+                if should_update_peaks:
+                    self._last_peak_update_hour = current_hour
+                    _LOGGER.info("[OpenData] Hourly peak data refresh at %02d:00", current_hour)
+                else:
+                    _LOGGER.debug("[OpenData] Public peak data fetched successfully")
+                    
             except Exception as err:
                 _LOGGER.warning("[OpenData] Failed to fetch public peak data: %s", err)
         else:
-            # Still fetch but don't log as prominently (regular interval update)
-            try:
-                await self.public_client.fetch_peak_data()
-                _LOGGER.debug("[OpenData] Public peak data fetched successfully")
-            except Exception as err:
-                _LOGGER.warning("[OpenData] Failed to fetch public peak data: %s", err)
-
-        # Sync calendar events if configured and peak data available (for both modes)
-        # Only start sync if not already running (prevent duplicate event creation)
-        if self._calendar_entity_id and self.public_client.peak_handler:
-            if self._calendar_sync_task is None or self._calendar_sync_task.done():
-                self._calendar_sync_task = asyncio.create_task(self._async_sync_calendar_events())
+            if not self._is_winter_season():
+                _LOGGER.debug("[OpenData] Skipped (off-season)")
             else:
-                _LOGGER.debug("Calendar sync already in progress, skipping")
+                _LOGGER.debug("[OpenData] Skipped (too soon since last update)")
+
+        # Calendar sync: Only run if peak event count changed
+        if self._calendar_entity_id and self.public_client.peak_handler:
+            current_peak_count = len(self.public_client.peak_handler.events)
+            if current_peak_count != self._last_peak_events_count:
+                if self._calendar_sync_task is None or self._calendar_sync_task.done():
+                    self._calendar_sync_task = asyncio.create_task(self._async_sync_calendar_events())
+                    self._last_peak_events_count = current_peak_count
+                    _LOGGER.debug("Calendar sync triggered (peak events changed: %d)", current_peak_count)
+                else:
+                    _LOGGER.debug("Calendar sync already in progress, skipping")
 
         # If in peak-only mode, we're done
         if self.is_opendata_mode:
             _LOGGER.debug("OpenData mode: skipping portal data fetch")
             return data
 
-        # Portal mode: fetch contract data
-        try:
-            # Login if session expired
-            if self._webuser and self._webuser.session_expired:
-                _LOGGER.debug("Session expired, re-authenticating")
-                await self._webuser.login()
+        # Portal mode: fetch contract data with smart scheduling
+        if self._should_update_portal():
+            try:
+                # Check portal status before attempting updates
+                if self._webuser:
+                    portal_available = await self._webuser.check_hq_portal_status()
+                    if not portal_available:
+                        now = datetime.datetime.now(ZoneInfo("America/Toronto"))
+                        # Log warning once per hour to avoid spam
+                        if (
+                            self._portal_last_offline_log is None
+                            or (now - self._portal_last_offline_log).total_seconds() >= 3600
+                        ):
+                            _LOGGER.warning("[Portal] Hydro-Québec portal is offline, skipping update")
+                            self._portal_last_offline_log = now
+                        return data
 
-            # Fetch contract hierarchy
-            if self._webuser:
-                await self._webuser.get_info()
-                await self._webuser.fetch_customers_info()
+                # Login if session expired
+                if self._webuser and self._webuser.session_expired:
+                    _LOGGER.debug("Session expired, re-authenticating")
+                    await self._webuser.login()
 
-                self._customer = self._webuser.get_customer(self._customer_id)
-                await self._customer.get_info()
+                # Fetch contract hierarchy
+                if self._webuser:
+                    await self._webuser.get_info()
+                    await self._webuser.fetch_customers_info()
 
-                self._account = self._customer.get_account(self._account_id)
-                self._contract = self._account.get_contract(self._contract_id)
+                    self._customer = self._webuser.get_customer(self._customer_id)
+                    await self._customer.get_info()
 
-                # Fetch period data
-                await self._contract.get_periods_info()
+                    self._account = self._customer.get_account(self._account_id)
+                    self._contract = self._account.get_contract(self._contract_id)
 
-                # Fetch outages
-                await self._contract.refresh_outages()
+                    # Fetch period data
+                    await self._contract.get_periods_info()
 
-                # Rate-specific data fetching
-                if self.rate == "D" and self.rate_option == "CPC":
-                    # Winter Credits
-                    contract_dcpc = self._contract
-                    if isinstance(contract_dcpc, ContractDCPC):
-                        contract_dcpc.set_preheat_duration(self._preheat_duration)
-                        await contract_dcpc.peak_handler.refresh_data()
-                    _LOGGER.debug("[Portal] Fetched DCPC winter credit data")
+                    # Fetch outages
+                    await self._contract.refresh_outages()
 
-                elif self.rate == "DPC":
-                    # Flex-D
-                    contract_dpc = self._contract
-                    if isinstance(contract_dpc, ContractDPC):
-                        contract_dpc.set_preheat_duration(self._preheat_duration)
-                        await contract_dpc.get_dpc_data()
-                        await contract_dpc.peak_handler.refresh_data()
-                    _LOGGER.debug("[Portal] Fetched DPC data")
+                    # Rate-specific data fetching
+                    if self.rate == "D" and self.rate_option == "CPC":
+                        # Winter Credits
+                        contract_dcpc = self._contract
+                        if isinstance(contract_dcpc, ContractDCPC):
+                            contract_dcpc.set_preheat_duration(self._preheat_duration)
+                            await contract_dcpc.peak_handler.refresh_data()
+                        _LOGGER.debug("[Portal] Fetched DCPC winter credit data")
 
-                elif self.rate == "DT":
-                    # Dual Tariff
-                    contract_dt = self._contract
-                    if isinstance(contract_dt, ContractDT):
-                        await contract_dt.get_annual_consumption()
-                    _LOGGER.debug("Fetched DT annual consumption")
+                    elif self.rate == "DPC":
+                        # Flex-D
+                        contract_dpc = self._contract
+                        if isinstance(contract_dpc, ContractDPC):
+                            contract_dpc.set_preheat_duration(self._preheat_duration)
+                            await contract_dpc.get_dpc_data()
+                            await contract_dpc.peak_handler.refresh_data()
+                        _LOGGER.debug("[Portal] Fetched DPC data")
 
-                data["contract"] = self._contract
-                data["account"] = self._account
-                data["customer"] = self._customer
+                    elif self.rate == "DT":
+                        # Dual Tariff
+                        contract_dt = self._contract
+                        if isinstance(contract_dt, ContractDT):
+                            await contract_dt.get_annual_consumption()
+                        _LOGGER.debug("Fetched DT annual consumption")
 
-                _LOGGER.debug("Successfully fetched authenticated contract data")
+                    data["contract"] = self._contract
+                    data["account"] = self._account
+                    data["customer"] = self._customer
 
-        except hydroqc.error.HydroQcHTTPError as err:
-            _LOGGER.error("HTTP error fetching Hydro-Québec data: %s", err)
-            raise UpdateFailed(f"Error fetching Hydro-Québec data: {err}") from err
-        except Exception as err:
-            _LOGGER.error("Unexpected error fetching data: %s", err)
-            raise UpdateFailed(f"Unexpected error: {err}") from err
+                    self._last_portal_update = datetime.datetime.now(ZoneInfo("America/Toronto"))
+                    _LOGGER.debug("[Portal] Successfully fetched authenticated contract data")
+
+            except hydroqc.error.HydroQcHTTPError as err:
+                _LOGGER.error("HTTP error fetching Hydro-Québec data: %s", err)
+                raise UpdateFailed(f"Error fetching Hydro-Québec data: {err}") from err
+            except Exception as err:
+                _LOGGER.error("Unexpected error fetching data: %s", err)
+                raise UpdateFailed(f"Unexpected error: {err}") from err
+        else:
+            _LOGGER.debug("[Portal] Skipped (too soon since last update)")
 
         # Update timestamp on successful update
         self.last_update_success_time = datetime.datetime.now(datetime.UTC)
 
-        # Trigger consumption sync (matches hydroqc2mqtt pattern)
+        # Trigger consumption sync (hourly, with portal status check)
         # Only if not during first refresh to avoid blocking HA startup
         # AND only if consumption sync is enabled in config (check options first, then data)
         enable_consumption_sync = self.entry.options.get(
@@ -277,7 +361,16 @@ class HydroQcDataCoordinator(
             and hasattr(self, "_first_refresh_done")
             and enable_consumption_sync
         ):
-            self._regular_sync_task = asyncio.create_task(self._async_regular_consumption_sync())
+            # Check if enough time has elapsed (hourly)
+            now = datetime.datetime.now(ZoneInfo("America/Toronto"))
+            should_sync = (
+                self._last_consumption_sync is None
+                or (now - self._last_consumption_sync).total_seconds() >= 3600
+            )
+            
+            if should_sync:
+                self._regular_sync_task = asyncio.create_task(self._async_regular_consumption_sync())
+                self._last_consumption_sync = now
 
         return data
 

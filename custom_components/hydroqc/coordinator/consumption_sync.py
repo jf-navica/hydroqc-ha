@@ -70,15 +70,26 @@ class ConsumptionSyncMixin:
             )
 
     async def _async_regular_consumption_sync(self) -> None:
-        """Regular consumption sync (called every 60s from _async_update_data).
+        """Regular consumption sync (called hourly from _async_update_data).
 
         Matches hydroqc2mqtt pattern:
         - First sync: Check last 30 days and fill gaps or trigger CSV import
         - Regular sync: Only sync last 24 hours
-        - Skips if CSV import is running
+        - Skips if CSV import is running or portal is offline
         """
         if not self.is_portal_mode:
             return
+
+        # Check portal status before attempting sync
+        if self._webuser:
+            try:
+                portal_available = await self._webuser.check_hq_portal_status()
+                if not portal_available:
+                    _LOGGER.warning("[Portal] Portal offline, skipping consumption sync")
+                    return
+            except Exception as err:
+                _LOGGER.warning("[Portal] Failed to check portal status: %s, skipping consumption sync", err)
+                return
 
         # Skip if CSV import is running
         if self.is_consumption_history_syncing:

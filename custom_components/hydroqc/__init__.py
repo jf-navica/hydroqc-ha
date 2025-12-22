@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
+import asyncio
 import datetime
 import logging
+import random
 from typing import Any
 
 import homeassistant.helpers.config_validation as cv
@@ -43,7 +45,18 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up Hydro-Québec from a config entry."""
     _LOGGER.debug("Setting up Hydro-Québec integration for %s", entry.title)
 
+    # Migration: Remove deprecated update_interval from options
+    if "update_interval" in entry.options:
+        new_options = {k: v for k, v in entry.options.items() if k != "update_interval"}
+        hass.config_entries.async_update_entry(entry, options=new_options)
+        _LOGGER.info("Migrated config: removed deprecated 'update_interval' option")
+
     coordinator = HydroQcDataCoordinator(hass, entry)
+
+    # Add startup jitter to prevent thundering herd on HA restart
+    jitter_seconds = random.randint(0, 60)
+    _LOGGER.debug("Adding %d second startup jitter before first refresh", jitter_seconds)
+    await asyncio.sleep(jitter_seconds)
 
     try:
         await coordinator.async_config_entry_first_refresh()

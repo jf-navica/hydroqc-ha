@@ -13,7 +13,6 @@ CONF_RATE: Final = "rate"
 CONF_RATE_OPTION: Final = "rate_option"
 CONF_AUTH_MODE: Final = "auth_mode"
 CONF_PREHEAT_DURATION: Final = "preheat_duration_minutes"
-CONF_UPDATE_INTERVAL: Final = "update_interval"
 CONF_HISTORY_DAYS: Final = "history_days"
 CONF_CALENDAR_ENTITY_ID: Final = "calendar_entity_id"
 CONF_ENABLE_CONSUMPTION_SYNC: Final = "enable_consumption_sync"
@@ -23,7 +22,6 @@ AUTH_MODE_PORTAL: Final = "portal"
 AUTH_MODE_OPENDATA: Final = "opendata"
 
 # Defaults
-DEFAULT_UPDATE_INTERVAL: Final = 60  # seconds
 DEFAULT_PREHEAT_DURATION: Final = 120  # minutes
 
 # Supported rates
