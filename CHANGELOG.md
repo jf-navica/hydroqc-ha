@@ -41,8 +41,8 @@ L'option "Intervalle de mise à jour" a été retirée de la configuration. Le s
   - Réduit la charge sur le système calendrier
   
 - **Protection contre le "thundering herd"**
-  - Délai aléatoire 0-60s au démarrage
-  - Évite les pics d'appels simultanés lors des redémarrages HA
+  - Intervalle fixe de 5 minutes distribue naturellement la charge
+  - Évite les pics d'appels simultanés grâce aux fenêtres temporelles
 
 - **Détection des changements de période de facturation**
   - Identifie automatiquement les périodes à risque (2-3 jours avant/après fin de période)

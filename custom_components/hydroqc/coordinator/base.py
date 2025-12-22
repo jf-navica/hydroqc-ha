@@ -188,7 +188,10 @@ class HydroQcDataCoordinator(
         return 0 <= now.hour < 8
 
     def _should_update_opendata(self) -> bool:
-        """Determine if OpenData should be updated based on time elapsed and window."""
+        """Determine if OpenData should be updated based on time elapsed and window.
+        
+        Always updates at the top of each hour to ensure peak state sensors are accurate.
+        """
         # Skip if off-season
         if not self._is_winter_season():
             return False
@@ -200,6 +203,13 @@ class HydroQcDataCoordinator(
         # Calculate time elapsed
         now = datetime.datetime.now(ZoneInfo("America/Toronto"))
         elapsed = (now - self._last_opendata_update).total_seconds()
+        
+        # Force update at top of each hour for accurate peak state transitions
+        # Peak events start/end on the hour (e.g., 6:00, 10:00, 16:00, 20:00)
+        # Check if we're within first 5 minutes of a new hour and haven't updated this hour yet
+        if now.minute < 5 and self._last_opendata_update.hour != now.hour:
+            _LOGGER.debug("[OpenData] Forcing update at top of hour for peak state accuracy")
+            return True
         
         # Active window: 5 minutes, Inactive: 60 minutes
         if self._is_opendata_active_window():
