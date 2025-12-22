@@ -377,6 +377,13 @@ SENSORS: Final = {
 }
 
 BINARY_SENSORS: Final = {
+    # Diagnostic sensors
+    "portal_status": {
+        "data_source": "portal_available",
+        "icon": "mdi:web-check",
+        "rates": ["ALL"],
+        "diagnostic": True,
+    },
     # Contract binary sensors
     "current_period_epp_enabled": {
         "data_source": "contract.cp_epp_enabled",

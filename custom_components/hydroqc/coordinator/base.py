@@ -97,6 +97,9 @@ class HydroQcDataCoordinator(
         
         # Track portal offline status to avoid log spam
         self._portal_last_offline_log: datetime.datetime | None = None
+        
+        # Track portal availability status
+        self._portal_available: bool | None = None
 
         # Initialize webuser if in portal mode
         if self._auth_mode == AUTH_MODE_PORTAL:
@@ -272,6 +275,7 @@ class HydroQcDataCoordinator(
                 # Check portal status before attempting updates
                 if self._webuser:
                     portal_available = await self._webuser.check_hq_portal_status()
+                    self._portal_available = portal_available  # Track for sensor
                     if not portal_available:
                         now = datetime.datetime.now(ZoneInfo("America/Toronto"))
                         # Log warning once per hour to avoid spam

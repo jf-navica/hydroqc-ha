@@ -9,6 +9,7 @@ from homeassistant.components.binary_sensor import BinarySensorEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.device_registry import DeviceInfo
+from homeassistant.helpers.entity import EntityCategory
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.restore_state import RestoreEntity
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
@@ -96,6 +97,10 @@ class HydroQcBinarySensor(
         self._attr_unique_id = f"{contract_id}_{sensor_key}"
         self._attr_device_class = sensor_config.get("device_class")
         self._attr_icon = sensor_config.get("icon")
+        
+        # Set entity category for diagnostic sensors
+        if sensor_config.get("diagnostic", False):
+            self._attr_entity_category = EntityCategory.DIAGNOSTIC
 
         # Device info
         self._attr_device_info = DeviceInfo(

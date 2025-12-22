@@ -308,8 +308,9 @@
         "name": "Pico mañana mañana"
       },
       "dpc_critical_evening_peak_tomorrow": {
-        "name": "Pico tarde mañana"
-      }
+        "name": "Pico tarde mañana"      },
+      "portal_status": {
+        "name": "Estado del portal"      }
     }
   }
 }

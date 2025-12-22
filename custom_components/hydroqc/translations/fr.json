@@ -298,8 +298,9 @@
         "name": "Pointe matin demain"
       },
       "dpc_critical_evening_peak_tomorrow": {
-        "name": "Pointe soir demain"
-      }
+        "name": "Pointe soir demain"      },
+      "portal_status": {
+        "name": "Statut du portail"      }
     }
   }
 }

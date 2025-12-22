@@ -309,6 +309,9 @@
       },
       "dpc_critical_evening_peak_tomorrow": {
         "name": "Evening Peak Tomorrow"
+      },
+      "portal_status": {
+        "name": "Portal Status"
       }
     }
   }
