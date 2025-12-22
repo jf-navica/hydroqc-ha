@@ -69,6 +69,40 @@ class ConsumptionSyncMixin:
                 self._statistics_manager,
             )
 
+    def _is_near_billing_period_change(self) -> bool:
+        """Check if we are within 2-3 days of billing period start or end.
+
+        Known issue: Hydro-Québec portal does not provide consumption data
+        2-3 days before and after the end of a billing period.
+
+        Returns:
+            bool: True if within 3 days of billing period boundary
+        """
+        if not self._contract:
+            return False
+
+        try:
+            today = datetime.date.today()
+            period_start = getattr(self._contract, "cp_start_date", None)
+            period_end = getattr(self._contract, "cp_end_date", None)
+
+            if period_start is None or period_end is None:
+                return False
+
+            # Check if within 3 days before period end
+            days_to_end = (period_end - today).days
+            if 0 <= days_to_end <= 3:
+                return True
+
+            # Check if within 3 days after period start (new period just started)
+            days_from_start = (today - period_start).days
+            if 0 <= days_from_start <= 3:
+                return True
+
+            return False
+        except Exception:
+            return False
+
     async def _async_regular_consumption_sync(self) -> None:
         """Regular consumption sync (called hourly from _async_update_data).
 
@@ -115,7 +149,15 @@ class ConsumptionSyncMixin:
                 start_date = datetime.date.today() - datetime.timedelta(days=1)
                 await self.async_fetch_hourly_consumption(start_date, datetime.date.today())
         except Exception as err:
-            _LOGGER.error("Error during consumption sync: %s", err)
+            # Check if error might be due to billing period change
+            if self._is_near_billing_period_change():
+                _LOGGER.warning(
+                    "[Portal] Error during consumption sync (near billing period boundary, "
+                    "consumption data may be temporarily unavailable): %s",
+                    err,
+                )
+            else:
+                _LOGGER.error("Error during consumption sync: %s", err)
 
     async def _async_initial_sync(self) -> None:
         """Initial consumption sync - runs in background to not block startup.
@@ -170,7 +212,15 @@ class ConsumptionSyncMixin:
                 # Statistics are up to date, nothing to do
                 _LOGGER.info("Consumption statistics are up to date, no sync needed")
         except Exception as err:
-            _LOGGER.error("Error during initial consumption sync: %s", err)
+            # Check if error might be due to billing period change
+            if self._is_near_billing_period_change():
+                _LOGGER.warning(
+                    "[Portal] Error during initial consumption sync (near billing period boundary, "
+                    "consumption data may be temporarily unavailable): %s",
+                    err,
+                )
+            else:
+                _LOGGER.error("Error during initial consumption sync: %s", err)
 
     def async_sync_consumption_history(self, days_back: int = 731) -> None:
         """Import historical consumption data via CSV (background task).

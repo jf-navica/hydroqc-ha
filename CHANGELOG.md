@@ -10,6 +10,52 @@
 
 ---
 
+## [0.6.0] - 2025-01-XX
+
+### ⚠️ Changements importants
+
+**Suppression de l'option d'intervalle de mise à jour configurable**
+
+L'option "Intervalle de mise à jour" a été retirée de la configuration. Le système utilise maintenant un ordonnancement intelligent basé sur les heures de mise à jour réelles des données Hydro-Québec.
+
+**Migration automatique** : L'intégration supprimera automatiquement l'ancienne configuration lors de la mise à jour. Aucune action requise de votre part.
+
+### Ajouté
+
+- **Ordonnancement intelligent des mises à jour** (#35)
+  - Fenêtres temporelles adaptées aux heures de mise à jour HQ
+  - OpenData : 11h-18h (5 min actif / 60 min inactif)
+  - Portail : 0h-8h (60 min actif / 180 min inactif)
+  - Synchronisation consommation : toutes les heures
+  - Détection automatique hors-saison (OpenData désactivé hors déc-mars)
+  
+- **Détection du portail hors-ligne**
+  - Vérifie le statut du portail avant toute opération
+  - Évite les erreurs inutiles pendant les maintenances
+  - Journalisation limitée (1x par heure maximum)
+  
+- **Optimisation synchronisation calendrier**
+  - Mise à jour uniquement quand de nouveaux événements détectés
+  - Réduit la charge sur le système calendrier
+  
+- **Protection contre le "thundering herd"**
+  - Délai aléatoire 0-60s au démarrage
+  - Évite les pics d'appels simultanés lors des redémarrages HA
+
+### Modifié
+
+- Intervalle fixe du coordinateur : 5 minutes (au lieu de configurable)
+- Synchronisation consommation : toutes les heures (au lieu de 15 min)
+- Réduction significative de la charge système tout en maintenant la fraîcheur des données
+
+### Retiré
+
+- Option de configuration "Intervalle de mise à jour" (BREAKING CHANGE)
+  - Migration automatique incluse
+  - L'ordonnancement intelligent remplace ce réglage
+
+---
+
 ## [0.5.0] - 2025-12-22
 
 ### Note de mise à jour importante
