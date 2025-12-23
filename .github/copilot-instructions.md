@@ -22,8 +22,9 @@ This is a **Home Assistant custom component** for monitoring Hydro-Québec elect
    - **`coordinator/sensor_data.py`**: SensorDataMixin for sensor value retrieval
    - **`coordinator.py`**: Root-level re-export for backward compatibility
    - Manages both Portal mode (`WebUser`/`Customer`/`Account`/`Contract` hierarchy) and OpenData mode (`PublicClient`)
-   - **Manual scheduling only** - `update_interval=None` (automatic polling disabled for efficiency)
-   - **Scheduled triggers**:
+   - **Manual scheduling only** - `update_interval=None` disables DataUpdateCoordinator's automatic polling
+   - Instead of automatic polling every X seconds, uses explicit time-based triggers with `async_track_time_change()`
+   - **Scheduled triggers** (only call `async_request_refresh()` when data should be fetched):
      - OpenData: Every 5 minutes (checks time windows before fetching)
      - Portal: Every hour (checks time windows before fetching)
      - Peaks: Hourly at XX:00:00 (winter season only)
