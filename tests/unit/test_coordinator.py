@@ -34,7 +34,8 @@ class TestHydroQcDataCoordinator:
 
             assert coordinator.name == DOMAIN
             assert coordinator.config_entry == mock_config_entry
-            assert coordinator.update_interval == timedelta(seconds=60)
+            # Manual scheduling: update_interval is None (disabled automatic polling)
+            assert coordinator.update_interval is None
 
     async def test_coordinator_login_success(
         self,
