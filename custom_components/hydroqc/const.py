@@ -227,7 +227,10 @@ SENSORS: Final = {
         "data_source": "public_client.peak_handler.next_peak.preheat.start_date",
         "device_class": "timestamp",
         "icon": "mdi:clock-start",
-        "rates": ["DPC"],        "diagnostic": True,        "disabled_by_default": True,    },
+        "rates": ["DPC"],
+        "diagnostic": True,
+        "disabled_by_default": True,
+    },
     "dpc_critical_hours_count": {
         "data_source": "contract.critical_called_hours",
         "icon": "mdi:clock-alert-outline",

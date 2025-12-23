@@ -55,10 +55,7 @@ async def async_setup_entry(
         # Skip winter credit sensors (contract.peak_handler) if not DCPC
         # Note: public_client.peak_handler sensors should NOT be skipped
         data_source_str = cast(str, sensor_config["data_source"])
-        if (
-            "contract.peak_handler." in data_source_str
-            and coordinator.rate_option != "CPC"
-        ):
+        if "contract.peak_handler." in data_source_str and coordinator.rate_option != "CPC":
             continue
 
         entities.append(HydroQcBinarySensor(coordinator, entry, sensor_key, sensor_config, version))

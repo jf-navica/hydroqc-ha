@@ -288,6 +288,7 @@ class HydroQcDataCoordinator(
         if self._is_portal_active_window():
             return elapsed >= 3600  # 60 minutes
         return elapsed >= 10800  # 180 minutes
+
     async def _async_update_data(self) -> dict[str, Any]:  # noqa: PLR0912, PLR0915
         """Fetch data from Hydro-Québec API.
 
@@ -328,9 +329,13 @@ class HydroQcDataCoordinator(
             current_peak_count = len(self.public_client.peak_handler._events)
             if current_peak_count != self._last_peak_events_count:
                 if self._calendar_sync_task is None or self._calendar_sync_task.done():
-                    self._calendar_sync_task = asyncio.create_task(self._async_sync_calendar_events())
+                    self._calendar_sync_task = asyncio.create_task(
+                        self._async_sync_calendar_events()
+                    )
                     self._last_peak_events_count = current_peak_count
-                    _LOGGER.debug("Calendar sync triggered (peak events changed: %d)", current_peak_count)
+                    _LOGGER.debug(
+                        "Calendar sync triggered (peak events changed: %d)", current_peak_count
+                    )
                 else:
                     _LOGGER.debug("Calendar sync already in progress, skipping")
 
@@ -360,7 +365,9 @@ class HydroQcDataCoordinator(
                         self._portal_last_offline_log = now
                     # Portal offline - if no OpenData fetched either, skip update
                     if not data_fetched:
-                        _LOGGER.debug("No data fetched (portal offline, no OpenData), skipping sensor update")
+                        _LOGGER.debug(
+                            "No data fetched (portal offline, no OpenData), skipping sensor update"
+                        )
                         raise UpdateFailed("Portal offline and no new data")
                     return data
 
@@ -454,7 +461,9 @@ class HydroQcDataCoordinator(
             )
 
             if should_sync:
-                self._regular_sync_task = asyncio.create_task(self._async_regular_consumption_sync())
+                self._regular_sync_task = asyncio.create_task(
+                    self._async_regular_consumption_sync()
+                )
                 self._last_consumption_sync = now
 
         return data

@@ -119,7 +119,9 @@ class ConsumptionSyncMixin:
                     _LOGGER.warning("[Portal] Portal offline, skipping consumption sync")
                     return
             except Exception as err:
-                _LOGGER.warning("[Portal] Failed to check portal status: %s, skipping consumption sync", err)
+                _LOGGER.warning(
+                    "[Portal] Failed to check portal status: %s, skipping consumption sync", err
+                )
                 return
 
         # Skip if CSV import is running

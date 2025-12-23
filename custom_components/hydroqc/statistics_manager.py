@@ -261,7 +261,9 @@ class StatisticsManager:
                             current_date,
                         )
                     else:
-                        _LOGGER.error("HTTP error fetching consumption for %s: %s", current_date, err)
+                        _LOGGER.error(
+                            "HTTP error fetching consumption for %s: %s", current_date, err
+                        )
                     current_date += datetime.timedelta(days=1)
 
                 except Exception as err:

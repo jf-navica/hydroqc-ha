@@ -158,7 +158,7 @@ class HydroQcConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
             except hydroqc.error.HydroQcHTTPError as err:
                 # Check if it's a 500 error (portal maintenance)
-                if hasattr(err, 'status_code') and err.status_code == 500:
+                if hasattr(err, "status_code") and err.status_code == 500:
                     errors["base"] = "portal_maintenance"
                 else:
                     errors["base"] = "invalid_auth"
