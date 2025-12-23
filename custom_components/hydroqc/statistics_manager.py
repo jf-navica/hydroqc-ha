@@ -12,6 +12,7 @@ from typing import TYPE_CHECKING, Any
 from homeassistant.components.recorder import get_instance, statistics  # type: ignore[attr-defined]
 from homeassistant.components.recorder.models import StatisticMeanType
 from homeassistant.helpers.update_coordinator import UpdateFailed
+from hydroqc.error import HydroQcHTTPError
 
 if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant
@@ -250,6 +251,17 @@ class StatisticsManager:
 
                     # Yield control to event loop to allow HA to process other tasks
                     await asyncio.sleep(0)
+
+                except HydroQcHTTPError as err:
+                    # Expected error for dates without data (e.g., today, future dates)
+                    if "No data available for date" in str(err):
+                        _LOGGER.debug(
+                            "No consumption data available for %s (data not yet published by HQ)",
+                            current_date,
+                        )
+                    else:
+                        _LOGGER.error("HTTP error fetching consumption for %s: %s", current_date, err)
+                    current_date += datetime.timedelta(days=1)
 
                 except Exception as err:
                     _LOGGER.exception(
